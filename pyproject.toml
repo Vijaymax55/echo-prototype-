@@ -1,0 +1,6 @@
+[project]
+name = "echo-prototype"
+version = "0.1.0"
+description = "Echo: a language-inclusive private peer agent for multilingual group discussion (CSCL 2027 prototype)"
+requires-python = ">=3.10"
+dependencies = ["openai>=1.40", "anthropic>=1.0"]

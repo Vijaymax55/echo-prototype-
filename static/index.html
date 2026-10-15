@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo · Discussion Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Gurmukhi:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ 1. SETUP ============ -->
+<section id="setup" class="screen active">
+  <div class="setup-card">
+    <div class="brand"><span class="logo">((·))</span> Echo</div>
+    <p class="lede">An AI peer that helps you test, phrase and share your idea <em>privately</em>, before you say it to the group.</p>
+
+    <div class="field">
+      <label for="f-name">Your name</label>
+      <input id="f-name" value="Simran" maxlength="24" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <span class="label">Home language</span>
+      <div class="seg" id="f-home">
+        <button data-v="pa" class="on">ਪੰਜਾਬੀ Punjabi</button>
+        <button data-v="hi">हिंदी Hindi</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Discussion prompt</span>
+      <div class="seg" id="f-topic">
+        <button data-v="stream" class="on">Stream choice after Class 10</button>
+        <button data-v="phones">Phones &amp; social media</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Study condition <small>(Section 5.2)</small></span>
+      <div class="conds" id="f-cond">
+        <button data-v="C0"><b>C0 · Plain call</b><span>Audio only. No captions, no agent.</span></button>
+        <button data-v="C1"><b>C1 · Captions only</b><span>Simple English captions with Punjabi/Hindi glosses.</span></button>
+        <button data-v="C2" class="on"><b>C2 · Echo</b><span>Captions + private check, phrasing help, anonymous option, nudges.</span></button>
+      </div>
+    </div>
+
+    <label class="toggle"><input type="checkbox" id="f-voices" checked> Play peers' voices aloud (browser speech)</label>
+
+    <div class="norms">
+      <b>Group norms</b>
+      <span>Every idea counts. Nobody laughs at language.</span>
+      <span class="norm-home" id="norm-home">ਹਰ ਵਿਚਾਰ ਮਾਇਨੇ ਰੱਖਦਾ ਹੈ। ਭਾਸ਼ਾ 'ਤੇ ਕੋਈ ਨਹੀਂ ਹੱਸਦਾ।</span>
+    </div>
+
+    <button id="btn-start" class="primary big">Join the discussion</button>
+    <p class="fine" id="mode-line">Checking AI connection…</p>
+  </div>
+</section>
+
+<!-- ============ 2. ROOM ============ -->
+<section id="room" class="screen">
+  <header class="topbar">
+    <div class="brand small"><span class="logo">((·))</span> Echo</div>
+    <div class="prompt-box">
+      <div class="prompt" id="r-prompt"></div>
+      <div class="prompt-home" id="r-prompt-home"></div>
+    </div>
+    <div class="meta">
+      <span class="chip" id="r-cond"></span>
+      <span class="chip ghost" id="r-mode"></span>
+      <span class="chip ghost" id="r-round">Round 1</span>
+      <span class="chip ghost mono" id="r-timer">00:00</span>
+      <button class="icon" id="btn-pause" title="Pause the simulated peers">⏸</button>
+      <button class="ghost-btn" id="btn-teacher">Teacher view</button>
+      <button class="ghost-btn danger" id="btn-end">Finish</button>
+    </div>
+  </header>
+
+  <div class="room-grid">
+    <main class="stage">
+      <div class="tiles" id="tiles"></div>
+      <div class="feed" id="feed" aria-live="polite"></div>
+      <div class="cue" id="cue" hidden>
+        <div class="cue-head">Your cue card <small>(only you see this; say it in your own words)</small><button class="x" id="cue-x" aria-label="Close">×</button></div>
+        <div class="cue-text" id="cue-text"></div>
+      </div>
+      <form class="composer" id="composer" autocomplete="off">
+        <button type="button" class="mic" id="mic-group" title="Speak (English)">🎤</button>
+        <input id="say" placeholder="Speak or type to the whole group…">
+        <button class="primary" type="submit">Say it</button>
+      </form>
+    </main>
+
+    <aside class="echo" id="echo">
+      <div class="echo-head">
+        <div><span class="logo">((·))</span> <b>Echo</b> <span class="private">Private to you</span></div>
+        <div class="fade" id="fade-line"></div>
+      </div>
+
+      <div class="echo-body" id="echo-body">
+        <div class="nudge" id="nudge" hidden>
+          <div class="nudge-tag">A thought for you</div>
+          <div class="nudge-en" id="nudge-en"></div>
+          <div class="nudge-home" id="nudge-home"></div>
+          <div class="row">
+            <button class="primary" id="nudge-try">Try it</button>
+            <button class="ghost-btn" id="nudge-no">Not now</button>
+          </div>
+        </div>
+
+        <button class="idea-btn" id="btn-idea">💡 I have an idea</button>
+
+        <div class="check" id="check" hidden>
+          <div class="seg small" id="check-lang">
+            <button data-v="pa" class="on">ਪੰਜਾਬੀ</button>
+            <button data-v="hi">हिंदी</button>
+            <button data-v="en">English</button>
+          </div>
+          <textarea id="check-text" rows="3" placeholder="Say or type your idea in any language. Only Echo sees this."></textarea>
+          <div class="row">
+            <button class="mic" id="mic-check" title="Speak your idea">🎤</button>
+            <button class="link" id="btn-example">Use an example idea</button>
+            <span class="spacer"></span>
+            <button class="ghost-btn" id="check-cancel">Cancel</button>
+            <button class="primary" id="check-send">Check with Echo</button>
+          </div>
+        </div>
+
+        <div class="reply" id="reply" hidden>
+          <div class="warm" id="reply-warm"></div>
+          <div class="simple-label">In simple English</div>
+          <div class="simple" id="reply-simple"></div>
+          <div class="starter" id="reply-starter"></div>
+          <div class="kw" id="reply-kw"></div>
+          <div class="row wrap">
+            <button class="primary" id="share-own">🎤 I'll say it in my words</button>
+            <button class="ghost-btn" id="share-anon">Share anonymously</button>
+            <button class="link" id="share-keep">Keep it private</button>
+          </div>
+        </div>
+
+        <div class="history" id="history"></div>
+      </div>
+
+      <div class="echo-foot">Only you can see this panel. Not your group, not your teacher. Echo never says right or wrong, and never speaks for you.</div>
+    </aside>
+  </div>
+
+  <!-- teacher drawer -->
+  <div class="drawer" id="teacher" hidden>
+    <div class="drawer-card">
+      <div class="drawer-head">
+        <b>Teacher view</b> <span class="fine">Turn counts and the text chat only. Private Echo conversations are never shown.</span>
+        <button class="x" id="teacher-x" aria-label="Close">×</button>
+      </div>
+      <div class="stats" id="t-stats"></div>
+      <div class="t-section"><b>Speaking turns</b><div id="t-bars"></div></div>
+      <div class="t-section"><b>Participation equity over rounds</b> <span class="fine">Normalised Gini of turns: 0 = everyone equal, 1 = one person talks</span><div id="t-gini"></div></div>
+      <div class="t-section"><b>Ideas from <span class="t-name"></span> and their uptake</b><div id="t-ideas"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. WRAP-UP ============ -->
+<section id="end" class="screen">
+  <div class="end-wrap">
+    <h1>Joint answer</h1>
+    <p class="fine" id="e-prompt"></p>
+    <div class="card" id="e-answer"><div class="loading">Drafting the group's answer…</div></div>
+
+    <h2>Quick reflection <small>(private, 1 to 5)</small></h2>
+    <div class="card reflect">
+      <label>Right now, how willing would you be to speak English in a group?<input type="range" min="1" max="5" value="3" id="q-wtc"><span class="scale"><i>not at all</i><i>very</i></span></label>
+      <label>How nervous did you feel about speaking today?<input type="range" min="1" max="5" value="3" id="q-anx"><span class="scale"><i>not at all</i><i>very</i></span></label>
+      <label>Did the group hear and use your ideas?<input type="range" min="1" max="5" value="3" id="q-heard"><span class="scale"><i>not at all</i><i>a lot</i></span></label>
+    </div>
+
+    <h2>Your session</h2>
+    <div class="stats" id="e-stats"></div>
+    <div class="card" id="e-indep"></div>
+
+    <div class="row wrap end-actions">
+      <button class="primary" id="btn-save">Save reflection &amp; download research log</button>
+      <button class="ghost-btn" id="btn-again">New session</button>
+    </div>
+    <p class="fine">The research log holds counts, timings and the group transcript only. It never contains what you told Echo privately. Nothing is stored on a server.</p>
+  </div>
+</section>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+// Simulated peers and discussion scripts for the showcase room.
+// Each peer turn carries a pre-made caption (simple English + Punjabi/Hindi glosses)
+// so captions work offline; with live AI the server re-captions any new turn.
+// A "round" is 4 peer turns (one rotation), used for the two-silent-rounds nudge rule.
+
+export const PEERS = {
+  Arjun:    { color: "#2f6fde", proficiency: "higher", persona: "confident, fluent, argues firmly" },
+  Meera:    { color: "#b4499b", proficiency: "higher", persona: "confident, thoughtful, sees both sides" },
+  Rohan:    { color: "#c27a12", proficiency: "lower",  persona: "friendly, practical, uses examples" },
+  Harpreet: { color: "#178a6b", proficiency: "lower",  persona: "quiet, hesitant, speaks in short phrases" },
+};
+
+const g = (en, pa, hi) => ({ en, pa, hi });
+
+export const TOPICS = {
+  stream: {
+    id: "stream",
+    prompt: "Should students choose their own stream after Class 10?",
+    prompt_pa: "ਕੀ ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ ਦਸਵੀਂ ਤੋਂ ਬਾਅਦ ਆਪਣੀ ਸਟ੍ਰੀਮ ਆਪ ਚੁਣਨੀ ਚਾਹੀਦੀ ਹੈ?",
+    prompt_hi: "क्या विद्यार्थियों को दसवीं के बाद अपनी स्ट्रीम ख़ुद चुननी चाहिए?",
+    sample_idea: "ਮਾਪਿਆਂ ਨੂੰ ਨੌਕਰੀਆਂ ਬਾਰੇ ਪਤਾ ਹੁੰਦਾ ਹੈ, ਪਰ ਬੱਚਿਆਂ ਨੂੰ ਪਤਾ ਹੁੰਦਾ ਹੈ ਕਿ ਉਹਨਾਂ ਨੂੰ ਕੀ ਪਸੰਦ ਹੈ। ਦੋਵਾਂ ਨੂੰ ਮਿਲ ਕੇ ਫੈਸਲਾ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ।",
+    turns: [
+      { s: "Arjun", t: "Honestly, I think students should have complete freedom to choose their stream, because ultimately they're the ones who have to study it for years.",
+        c: "Students should choose their own stream. They are the ones who will study it for many years.",
+        gl: [g("freedom", "ਆਜ਼ਾਦੀ", "आज़ादी"), g("ultimately", "ਆਖ਼ਰਕਾਰ", "आख़िरकार")] },
+      { s: "Meera", t: "I partly agree, but at fifteen most of us don't really know what careers even exist. A lot of people pick science just because of peer pressure.",
+        c: "At 15, many students don't know about careers. Many pick science because their friends do.",
+        gl: [g("careers", "ਪੇਸ਼ੇ / ਨੌਕਰੀਆਂ", "पेशे / नौकरियाँ"), g("peer pressure", "ਦੋਸਤਾਂ ਦਾ ਦਬਾਅ", "दोस्तों का दबाव")] },
+      { s: "Rohan", t: "Yeah, like my cousin took non-medical because everyone in his class did, and now he wants to switch to commerce.",
+        c: "My cousin took non-medical because his whole class did. Now he wants to change to commerce.",
+        gl: [g("switch", "ਬਦਲਣਾ", "बदलना")] },
+      { s: "Arjun", t: "That's exactly why the decision should be based on interest, not on what's fashionable or what gives a higher salary.",
+        c: "So choose by interest, not by what is popular or what pays more.",
+        gl: [g("interest", "ਦਿਲਚਸਪੀ", "रुचि"), g("salary", "ਤਨਖਾਹ", "तनख़्वाह")] },
+
+      { s: "Meera", t: "But interest can change. In Class 10 I loved biology, and now I'm way more into economics. So is one choice at fifteen really final?",
+        c: "Interests can change. I liked biology before, now I like economics. Is a choice at 15 final?",
+        gl: [g("final", "ਆਖ਼ਰੀ / ਪੱਕਾ", "आख़िरी / पक्का")] },
+      { s: "Harpreet", t: "Maybe... school can help more?",
+        c: "Maybe the school can help more?", gl: [] },
+      { s: "Arjun", t: "School counsellors exist, but they mostly just look at marks. Marks don't tell you what you're passionate about.",
+        c: "School counsellors mostly look at marks. Marks don't show what you love.",
+        gl: [g("counsellor", "ਸਲਾਹਕਾਰ", "सलाहकार"), g("passionate", "ਜਿਸਦਾ ਬਹੁਤ ਸ਼ੌਕ ਹੋਵੇ", "जिसका बहुत शौक हो")] },
+      { s: "Rohan", t: "True. In our school the counsellor meets each student for like five minutes, that's it.",
+        c: "Yes. Our counsellor meets each student for only five minutes.", gl: [] },
+
+      { s: "Meera", t: "Another thing is cost. Coaching for medical or engineering entrance exams is really expensive, so families have to think about money too.",
+        c: "Coaching for entrance exams costs a lot. Families must think about money too.",
+        gl: [g("entrance exam", "ਦਾਖ਼ਲਾ ਪ੍ਰੀਖਿਆ", "प्रवेश परीक्षा"), g("expensive", "ਮਹਿੰਗਾ", "महंगा")] },
+      { s: "Arjun", t: "Money matters, sure, but forcing a student into a stream they hate is a bigger waste in the long run.",
+        c: "Money matters. But forcing a student into a stream they hate wastes more in the end.",
+        gl: [g("forcing", "ਜ਼ਬਰਦਸਤੀ ਕਰਨਾ", "ज़बरदस्ती करना"), g("in the long run", "ਲੰਬੇ ਸਮੇਂ ਵਿੱਚ", "लंबे समय में")] },
+      { s: "Rohan", t: "So what should our final answer be? Students decide, or parents decide?",
+        c: "What is our final answer? Students decide, or parents decide?", gl: [] },
+      { s: "Meera", t: "I feel like we're kind of stuck between the two options.",
+        c: "We are stuck between the two choices.",
+        gl: [g("stuck", "ਫਸੇ ਹੋਏ", "फँसे हुए")] },
+
+      { s: "Arjun", t: "Think about what happens after Class 12 too. College admissions, study abroad, the stream really shapes everything.",
+        c: "After Class 12, college and study abroad depend on your stream.",
+        gl: [g("admissions", "ਦਾਖ਼ਲੇ", "दाख़िले"), g("abroad", "ਵਿਦੇਸ਼", "विदेश")] },
+      { s: "Harpreet", t: "My brother went to Canada... he chose himself.",
+        c: "My brother went to Canada. He chose by himself.", gl: [] },
+      { s: "Meera", t: "Okay, we need to wrap up soon. Does anyone have a point we haven't heard yet?",
+        c: "We must finish soon. Does anyone have a new point?",
+        gl: [g("wrap up", "ਖ਼ਤਮ ਕਰਨਾ", "ख़त्म करना")] },
+      { s: "Rohan", t: "Let's try to agree on one or two sentences for our joint answer.",
+        c: "Let's agree on one or two sentences for our group answer.",
+        gl: [g("joint answer", "ਸਾਂਝਾ ਜਵਾਬ", "साझा जवाब")] },
+    ],
+  },
+
+  phones: {
+    id: "phones",
+    prompt: "Should schools ban phones and social media for students under 18?",
+    prompt_pa: "ਕੀ ਸਕੂਲਾਂ ਨੂੰ 18 ਸਾਲ ਤੋਂ ਘੱਟ ਵਿਦਿਆਰਥੀਆਂ ਲਈ ਫ਼ੋਨ ਅਤੇ ਸੋਸ਼ਲ ਮੀਡੀਆ 'ਤੇ ਪਾਬੰਦੀ ਲਾਉਣੀ ਚਾਹੀਦੀ ਹੈ?",
+    prompt_hi: "क्या स्कूलों को 18 साल से कम विद्यार्थियों के लिए फ़ोन और सोशल मीडिया पर पाबंदी लगानी चाहिए?",
+    sample_idea: "फोन पूरी तरह बंद करना ठीक नहीं, लेकिन क्लास के टाइम पर फोन जमा कर देने चाहिए।",
+    turns: [
+      { s: "Meera", t: "I think a complete ban is unrealistic. Half our study material and class groups are on our phones now.",
+        c: "A full ban will not work. A lot of our study material is on our phones.",
+        gl: [g("ban", "ਪਾਬੰਦੀ", "पाबंदी"), g("unrealistic", "ਜੋ ਹੋ ਨਹੀਂ ਸਕਦਾ", "जो हो नहीं सकता")] },
+      { s: "Arjun", t: "But social media is designed to be addictive. Most of us scroll for hours and then panic before exams.",
+        c: "Social media is made to be addictive. We scroll for hours, then panic before exams.",
+        gl: [g("addictive", "ਆਦਤ ਪਾਉਣ ਵਾਲਾ", "लत लगाने वाला"), g("scroll", "ਸਕ੍ਰੋਲ ਕਰਨਾ", "स्क्रॉल करना")] },
+      { s: "Rohan", t: "Yeah, I lose track of time on reels all the time, honestly.",
+        c: "I often lose track of time watching reels.",
+        gl: [g("lose track of time", "ਸਮੇਂ ਦਾ ਪਤਾ ਨਾ ਲੱਗਣਾ", "समय का पता न चलना")] },
+      { s: "Meera", t: "That's a self-control issue though. Banning it in school doesn't teach us how to manage it at home.",
+        c: "That is about self-control. A school ban does not teach us to manage it at home.",
+        gl: [g("self-control", "ਆਪਣੇ ਉੱਤੇ ਕਾਬੂ", "ख़ुद पर काबू")] },
+
+      { s: "Arjun", t: "Fair, but there's also cyberbullying and misinformation. Schools have a responsibility to protect students.",
+        c: "There is also online bullying and false news. Schools should protect students.",
+        gl: [g("cyberbullying", "ਆਨਲਾਈਨ ਤੰਗ ਕਰਨਾ", "ऑनलाइन परेशान करना"), g("misinformation", "ਗਲਤ ਜਾਣਕਾਰੀ", "ग़लत जानकारी")] },
+      { s: "Harpreet", t: "Phone... also for family. Emergency.",
+        c: "Phones are also needed for family emergencies.",
+        gl: [g("emergency", "ਐਮਰਜੈਂਸੀ / ਮੁਸੀਬਤ ਵੇਲੇ", "आपात स्थिति")] },
+      { s: "Rohan", t: "Right, my mom calls me every day after school to check where I am.",
+        c: "My mom calls me after school every day to check on me.", gl: [] },
+      { s: "Arjun", t: "Then maybe basic phones are fine, and the real problem is social media apps specifically.",
+        c: "Maybe simple phones are okay. The real problem is social media apps.",
+        gl: [g("specifically", "ਖ਼ਾਸ ਤੌਰ 'ਤੇ", "ख़ास तौर पर")] },
+
+      { s: "Meera", t: "Some countries are making laws about social media age limits. India has data rules for children too.",
+        c: "Some countries have age limits for social media. India also has rules for children's data.",
+        gl: [g("age limit", "ਉਮਰ ਦੀ ਹੱਦ", "उम्र की सीमा")] },
+      { s: "Arjun", t: "Exactly, so the school ban would just match what the law is already moving towards.",
+        c: "So a school ban would follow where the law is going.", gl: [] },
+      { s: "Rohan", t: "So are we saying ban or no ban? We should decide.",
+        c: "Are we saying ban or no ban? We must decide.", gl: [] },
+      { s: "Meera", t: "I don't think it has to be all or nothing.",
+        c: "It does not have to be all or nothing.",
+        gl: [g("all or nothing", "ਜਾਂ ਸਾਰਾ ਜਾਂ ਕੁਝ ਨਹੀਂ", "या सब या कुछ नहीं")] },
+
+      { s: "Arjun", t: "Rules without a reason never work with teenagers anyway. People will just hide their phones.",
+        c: "Rules without reasons don't work with teenagers. They will hide their phones.",
+        gl: [g("hide", "ਲੁਕਾਉਣਾ", "छुपाना")] },
+      { s: "Harpreet", t: "In my old school... they had a box.",
+        c: "In my old school, they had a box for phones.", gl: [] },
+      { s: "Meera", t: "Okay, we need to wrap up soon. Does anyone have a point we haven't heard yet?",
+        c: "We must finish soon. Does anyone have a new point?",
+        gl: [g("wrap up", "ਖ਼ਤਮ ਕਰਨਾ", "ख़त्म करना")] },
+      { s: "Rohan", t: "Let's try to agree on one or two sentences for our joint answer.",
+        c: "Let's agree on one or two sentences for our group answer.",
+        gl: [g("joint answer", "ਸਾਂਝਾ ਜਵਾਬ", "साझा जवाब")] },
+    ],
+  },
+};
+
+export const ROUND_SIZE = 4;
