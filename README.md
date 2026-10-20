@@ -129,26 +129,42 @@ Go to **http://localhost:8027** in **Chrome or Edge** (the microphone buttons ne
 
 On the setup screen, pick:
 - **Your name** (default: Simran)
-- **Home language:** ਪੰਜਾਬੀ or हिंदी. This sets the caption glosses and Echo's replies.
-- **Prompt:** stream choice, or phones and social media
-- **Condition:** C0 plain call, C1 captions only, or C2 Echo
-- **Peer voices:** whether the peers' turns are read aloud. Turn off for a silent demo.
+- **I think best in:** ਪੰਜਾਬੀ or हिंदी. This sets the caption glosses and Echo's replies.
+- **Today's topic:** choosing a stream, or phones at school
+- **Research settings** (collapsed): the study condition (C0 plain call, C1 captions, C2 Echo; default C2) and whether peers' turns are read aloud (default off)
 
-Then click **Join the discussion**.
+Then click **Join discussion**.
 
 ### 4. A 5-minute demo (shows the paper's argument)
-1. **Run C1 (captions only) first.** Peers argue fluently; captions help you follow. There is nothing to help you *speak*.
-2. **Finish, then start a new session in C2 (Echo).**
+1. **Run C1 first** (open *Research settings*, pick *C1 · Captions*). Peers argue fluently; captions help you follow. There is nothing to help you *speak*.
+2. **Finish, then start a new session in C2 (Echo)**, the default.
 3. Stay silent. After about 2 rounds, a **private nudge** appears on the right. Click **Not now**.
-4. Click **💡 I have an idea**, write or speak an idea in Punjabi or Hindi (or click *Use an example idea*), then **Check with Echo**.
-5. Echo replies in your language with an **"In simple English"** version, a sentence starter and key words. It never says right or wrong.
-6. Click **🎤 I'll say it in my words**. A cue card appears. Type or speak *your own* version and press **Say it**. Alternatively, try **Share anonymously**.
+4. Click **💡 I have an idea**, write or speak an idea in Punjabi or Hindi (or click *Example*), then **Check**.
+5. Echo replies in your language with a **"You could say"** simple-English version, a sentence starter and key words. It never says right or wrong.
+6. Click **I'll say it myself**. A cue card appears above the chat box. Type or speak *your own* version and press **Send**. Alternatively, try **Share anonymously**.
 7. A peer **takes up your idea** in the next turn.
-8. Open **Teacher view**: live Gini, turns, idea uptake, and how much the student said on their own vs with help. No private text is shown.
-9. Click **Finish** to see the joint answer (ideas credited, anonymous ones kept anonymous) and the reflection. Then click **Save reflection & download research log** for a JSON log.
+8. Open **Teacher**: live Gini, turns, idea uptake, and how much the student said on their own vs with help. No private text is shown.
+9. Click **Finish** to see the joint answer (ideas credited, anonymous ones kept anonymous) and the reflection. Then click **Save** to download a JSON research log.
 10. Do a second C2 session: the end screen charts your unassisted share across sessions (RQ4).
 
-Controls in the room: **⏸** pauses the peers, **Teacher view** opens the dashboard, **Finish** ends the discussion.
+Controls in the room: **⏸** pauses the peers, **Teacher** opens the dashboard, **Finish** ends the discussion.
+
+### Screenshots for slides and the paper
+Add `?shot=` to the URL. The app fast-forwards to that moment and freezes it, ready to capture (best at 1440×900):
+
+| URL | Shows |
+|---|---|
+| `/?shot=setup` | the join screen |
+| `/?shot=captions` | peers talking, with simple-English captions and glosses |
+| `/?shot=nudge` | a private nudge after silent rounds |
+| `/?shot=idea` | the student typing an idea in Punjabi |
+| `/?shot=reply` | Echo's private reply: "You could say…", starter, key words |
+| `/?shot=cue` | the cue card above the chat box |
+| `/?shot=uptake` | the student's idea in the group, and a peer building on it |
+| `/?shot=teacher` | the teacher dashboard (Gini, turns, uptake) |
+| `/?shot=end` | the joint answer, stats and reflection |
+
+Optional extras: `&lang=hi` (Hindi), `&topic=phones`, `&c=C1` (captions-only condition), `&theme=dark`. Example: `http://localhost:8027/?shot=reply&lang=hi&theme=dark`. With live AI the wording varies between runs; run offline (`ECHO_OFFLINE=1 uv run server.py`) to get the same shot every time.
 
 ### 5. Settings (in `.env` or as environment variables)
 | Variable | Meaning | Default |
@@ -178,15 +194,15 @@ Controls in the room: **⏸** pauses the peers, **Teacher view** opens the dashb
 |---|---|
 | Barrier 1, doubt: private check (§4.1) | **💡 I have an idea**. The student writes or speaks privately in ਪੰਜਾਬੀ, हिंदी or English. Echo replies warmly in the same language and never says right or wrong (rule 2). |
 | Barrier 2, language: bilingual captions | Each peer turn shows simple English plus Punjabi or Hindi glosses for hard words, with the original words one tap away. Captions appear in C1 and C2. |
-| Barrier 3, phrasing: phrasing help | An "In simple English" suggestion, a sentence starter, and key words. **I'll say it in my words** shows a cue card only. Echo never posts into the group (rule 3). |
+| Barrier 3, phrasing: phrasing help | An "In simple English" suggestion, a sentence starter, and key words. **I'll say it myself** shows a cue card only. Echo never posts into the group (rule 3). |
 | Barrier 4, timing: nudges | After 2 silent rounds (a round is 4 peer turns), Echo sends a private nudge with **Try it** or **Not now**. At most 3 per session. |
 | Rule 4, anonymity as a first step | **Share anonymously** posts the idea as "A group member", and Echo encourages a named contribution next time. |
 | Rule 5, help fades | Each contribution made without help adds one more quiet round before the next nudge. A high unassisted share in the previous session adds another. |
 | §4.4 participation tracker | Counts turns only. No faces, no emotions, no video. |
 | §5.3 procedure | Norms, prompt, discussion, joint answer (originators credited, anonymous ideas stay anonymous), then a 3-question reflection. |
-| §5.4 measures | **Teacher view** shows the live normalised Gini (the paper's formula), turns per participant, idea uptake, the unassisted share, and nudges sent or declined. Private Echo text is never shown. |
+| §5.4 measures | **Teacher** shows the live normalised Gini (the paper's formula), turns per participant, idea uptake and the unassisted share (nudge counts go in the research log). Private Echo text is never shown. |
 | RQ4, independence | The end screen charts your unassisted share across sessions, stored in this browser only. |
-| Research log | **Save reflection & download** exports JSON with counts, Gini by round, ideas (assisted, anonymous, taken up), nudge events, reflection answers and the group transcript. It never includes private Echo messages. |
+| Research log | **Save** on the end screen exports JSON with counts, Gini by round, ideas (assisted, anonymous, taken up), nudge events, reflection answers and the group transcript. It never includes private Echo messages. |
 
 The **opt-in face and lip readiness signal (§4.4.6) is deliberately not built.** The paper itself treats it as exploratory and in need of ethics and legal review (DPDP Act §9). The voluntary "I have an idea" button is the mechanism used here.
 

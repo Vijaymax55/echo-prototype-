@@ -35,8 +35,10 @@ function gini(xs) {
 }
 
 const LANG_CODE = { pa: "pa-IN", hi: "hi-IN", en: "en-IN" };
-const HOME_NORMS = { pa: "ਹਰ ਵਿਚਾਰ ਮਾਇਨੇ ਰੱਖਦਾ ਹੈ। ਭਾਸ਼ਾ 'ਤੇ ਕੋਈ ਨਹੀਂ ਹੱਸਦਾ।", hi: "हर विचार मायने रखता है। भाषा पर कोई नहीं हँसता।" };
-const SPEED = location.hash === "#selftest" ? 0.05 : 1; // self-test runs the peers 20x faster
+const HOME_NORMS = { pa: "ਹਰ ਵਿਚਾਰ ਮਾਇਨੇ ਰੱਖਦਾ ਹੈ।", hi: "हर विचार मायने रखता है।" };
+// ?shot=<state> fast-forwards to one moment and freezes it, for screenshots.
+const SHOT = new URLSearchParams(location.search).get("shot");
+let SPEED = location.hash === "#selftest" || SHOT ? 0.05 : 1; // self-test and shots run the peers 20x faster
 const NUDGE_CAP = 3;            // max nudges per session (Section 4.4, rule 5)
 const ASSIST_WINDOW_MS = 120000; // a contribution within 2 min of Echo help counts as assisted
 
@@ -77,17 +79,17 @@ function nudgeThreshold() {
 }
 
 // ---------------------------------------------------------------- setup screen
-bindSeg("f-home", (v) => { $("norm-home").textContent = HOME_NORMS[v]; });
+bindSeg("f-home", (v) => { $("norm-home").textContent = `Every idea counts. Nobody laughs at language. · ${HOME_NORMS[v]}`; });
 bindSeg("f-topic");
 bindSeg("f-cond");
 bindSeg("check-lang");
 
-fetch("/api/status").then((r) => r.json()).then((s) => {
+const statusReady = fetch("/api/status").then((r) => r.json()).then((s) => {
   LIVE = !!s.live;
-  $("mode-line").textContent = LIVE
-    ? `Live AI connected (${s.provider}: ${s.model}). Captions, phrasing help, nudges and peer replies are generated live.`
-    : "Offline demo mode: captions are pre-made and phrasing help works for the example ideas. Add OPENAI_API_KEY to echo/.env for live AI.";
-}).catch(() => { $("mode-line").textContent = "Server not reachable. Start it with: python3 server.py"; });
+  $("mode-line").classList.toggle("live", LIVE);
+  $("mode-line").querySelector("span").textContent = LIVE ? `Live AI · ${s.model}` : "Offline demo";
+  $("mode-line").title = LIVE ? "" : "Captions are pre-made. Add OPENAI_API_KEY to echo/.env for live AI.";
+}).catch(() => { $("mode-line").querySelector("span").textContent = "Server not reachable. Start it with: python3 server.py"; });
 
 $("btn-start").addEventListener("click", startSession);
 
@@ -100,9 +102,6 @@ function startSession() {
   show("room");
   $("r-prompt").textContent = S.topic.prompt;
   $("r-prompt-home").textContent = hasCaptions() ? S.topic[`prompt_${S.home}`] : "";
-  $("r-cond").textContent = { C0: "C0 · Plain call", C1: "C1 · Captions", C2: "C2 · Echo" }[S.cond];
-  $("r-mode").textContent = LIVE ? "Live AI" : "Offline demo";
-  $("r-mode").classList.toggle("live", LIVE);
   $("room").querySelector(".room-grid").classList.toggle("no-echo", !hasEcho());
   $("echo").hidden = !hasEcho();
   document.querySelectorAll(".t-name").forEach((x) => (x.textContent = S.name));
@@ -114,8 +113,7 @@ function startSession() {
   $("btn-pause").textContent = "⏸";
   $("check-lang").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.home));
   renderTiles();
-  updateFadeLine();
-  sys(`Discussion started. Norms: every idea counts; nobody laughs at language.`);
+  sys("Every idea counts. Nobody laughs at language.");
   S.running = true;
   S.timer = setInterval(tick, 1000);
   peerLoop();
@@ -126,18 +124,17 @@ function tick() {
   $("r-timer").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function colorOf(name) { return PEERS[name]?.color || "#0f7b6c"; }
+function colorOf(name) { return PEERS[name]?.color || "#5b4bd6"; }
 function initials(name) { return name.slice(0, 1).toUpperCase(); }
 
 function renderTiles(speaking) {
   const t = $("tiles"); t.innerHTML = "";
   for (const p of S.participants) {
     const me = p === S.name;
-    const tile = el("div", `tile${me ? " me" : ""}${p === speaking ? " speaking" : ""}`);
+    const tile = el("div", `person${me ? " me" : ""}${p === speaking ? " speaking" : ""}`);
     tile.append(el("div", "avatar", initials(p)));
     tile.querySelector(".avatar").style.background = colorOf(p);
-    tile.append(el("div", "nm", esc(me ? `${p} (you)` : p)));
-    tile.append(el("div", "tc", `${S.counts[p]} turn${S.counts[p] === 1 ? "" : "s"}`));
+    tile.append(el("div", "nm", esc(me ? "You" : p)));
     t.append(tile);
   }
 }
@@ -153,17 +150,17 @@ function renderTurn(turn) {
   const av = el("div", "av", turn.anonymous ? "?" : initials(turn.speaker));
   av.style.background = colorOf(turn.speaker);
   const body = el("div");
-  const tag = turn.anonymous ? `<span class="tag">anonymous · chat</span>` : turn.typed ? `<span class="tag">chat</span>` : "";
-  body.append(el("div", "who", `${esc(shownName)}${tag}`));
+  const tag = turn.anonymous ? `<span class="tag">anonymous</span>` : "";
+  body.append(el("div", "who", `${esc(me ? "You" : shownName)}${tag}`));
   if (hasCaptions() && turn.caption && !turn.isStudent) {
     m.classList.add("captioned");
     body.append(el("div", "cap", esc(turn.caption)));
     if (turn.glosses?.length) {
       const gl = el("div", "gl");
-      for (const g of turn.glosses) gl.append(el("span", null, `<b>${esc(g.en)}</b> = ${esc(S.home === "pa" ? g.pa : g.hi)}`));
+      for (const g of turn.glosses) gl.append(el("span", null, `<b>${esc(g.en)}</b> ${esc(S.home === "pa" ? g.pa : g.hi)}`));
       body.append(gl);
     }
-    const d = el("details"); d.innerHTML = `<summary class="fine">original words</summary><div class="orig">${esc(turn.text)}</div>`;
+    const d = el("details"); d.innerHTML = `<summary>Original</summary><div class="orig">${esc(turn.text)}</div>`;
     body.append(d);
   } else {
     body.append(el("div", "orig", esc(turn.text)));
@@ -264,7 +261,6 @@ function onPeerTurnDone() {
   log("round_end", { round: S.round, studentSpoke: S.studentSpokeThisRound, silentRounds: S.silentRounds, gini: S.giniByRound.at(-1).gini });
   S.studentSpokeThisRound = false;
   S.round++;
-  $("r-round").textContent = `Round ${S.round}`;
   renderTeacher();
   if (hasEcho() && S.silentRounds >= nudgeThreshold() && S.nudgesSent < NUDGE_CAP && !S.nudgeOpen && $("check").hidden && $("reply").hidden) {
     sendNudge();
@@ -298,7 +294,6 @@ function contribute(text, { anonymous, typed }) {
   } else if (hasEcho() && !assisted) {
     addHistory("You spoke on your own. Echo will step back a little.");
   }
-  updateFadeLine();
   renderTeacher();
   requestUptake(idea);
 }
@@ -322,6 +317,7 @@ async function requestUptake(idea) {
     const ideaTurn = S.turns[idea.turnId];
     if (ideaTurn?.node && !ideaTurn.node.querySelector(".uptake")) ideaTurn.node.append(el("div", "uptake", `↳ ${esc(turn.speaker)} is building on this`));
   }, 400);
+  if (hasEcho() && !idea.anonymous) addHistory(`${turn.speaker} is building on your idea.`);
   renderTeacher();
 }
 const slim = (t) => ({ speaker: t.speaker, text: t.text, anonymous: !!t.anonymous });
@@ -361,19 +357,18 @@ $("check-send").addEventListener("click", async () => {
   if (r.simple_english) {
     $("reply-simple").textContent = r.simple_english;
   } else {
-    $("reply-simple").innerHTML = `<span class="loading">Try one of these: “I think … because …” · “What if …?” · “Can I add something? …”</span>`;
+    $("reply-simple").innerHTML = `<span class="loading">“I think … because …” or “What if …?”</span>`;
   }
-  $("reply-starter").textContent = r.starter ? `To begin: “${r.starter.trim()}”` : "";
+  $("reply-starter").textContent = r.starter ? `Start with: “${r.starter.trim()}”` : "";
   const kw = $("reply-kw"); kw.innerHTML = "";
   for (const k of r.key_words || []) kw.append(el("span", null, `<b>${esc(k.en)}</b> = ${esc(k.home)}`));
-  updateFadeLine();
 });
 
 $("share-own").addEventListener("click", () => {
   const p = S.pending;
   $("cue-text").textContent = p?.simple || "I think … because …";
   $("cue").hidden = false;
-  addHistory("You checked an idea with Echo. Your cue card is above the chat box.");
+  addHistory("Your cue is above the chat box. Say it your way.");
   log("share_choice", { choice: "own_words" });
   resetEchoPanel();
   $("say").focus();
@@ -396,16 +391,6 @@ $("cue-x").addEventListener("click", () => ($("cue").hidden = true));
 function addHistory(text) {
   const h = el("div", "h", esc(text));
   $("history").prepend(h);
-}
-
-function updateFadeLine() {
-  if (!S || !hasEcho()) return;
-  const mine = S.ideas;
-  const un = mine.filter((i) => !i.assisted).length;
-  const th = nudgeThreshold();
-  $("fade-line").textContent = mine.length
-    ? `${un} of ${mine.length} contributions on your own · nudges after ${th} quiet rounds`
-    : `Nudges after ${th} quiet rounds · at most ${NUDGE_CAP} per session`;
 }
 
 // ---------------------------------------------------------------- nudges (timing barrier)
@@ -477,20 +462,17 @@ function renderTeacher() {
   const unassisted = mine.filter((i) => !i.assisted).length;
   const taken = mine.filter((i) => i.takenUp).length;
   $("t-stats").innerHTML = statTiles([
-    [g.toFixed(2), "Gini of turns now"],
-    [S.counts[S.name], `${esc(S.name)}'s turns`],
+    [g.toFixed(2), "Gini now"],
     [mine.length ? `${taken}/${mine.length}` : "—", "ideas taken up"],
     [hasEcho() ? (mine.length ? `${Math.round((100 * unassisted) / mine.length)}%` : "—") : "n/a", "unassisted share"],
-    [hasEcho() ? `${S.nudgesSent} / ${S.nudgesDeclined}` : "n/a", "nudges sent / declined"],
   ]);
   const max = Math.max(1, ...counts);
-  $("t-bars").innerHTML = S.participants.map((p) => {
-    const lvl = p === S.name ? "student" : PEERS[p].proficiency;
-    return `<div class="bar"><span>${esc(p)} <span class="lvl">${lvl}</span></span><div class="track"><div class="fill" style="width:${(100 * S.counts[p]) / max}%;background:${colorOf(p)}"></div></div><span class="mono">${S.counts[p]}</span></div>`;
-  }).join("");
+  $("t-bars").innerHTML = S.participants.map((p) =>
+    `<div class="bar"><span>${esc(p)}</span><div class="track"><div class="fill" style="width:${(100 * S.counts[p]) / max}%;background:${colorOf(p)}"></div></div><span class="n">${S.counts[p]}</span></div>`
+  ).join("");
   $("t-gini").innerHTML = giniChart(S.giniByRound);
   $("t-ideas").innerHTML = mine.length
-    ? mine.map((i) => `<div class="idea-row">${esc(i.text)}<br><span class="${i.takenUp ? "ok" : "no"}">${i.takenUp ? `taken up by ${esc(i.by)}` : "not yet taken up"}</span> · ${i.anonymous ? "anonymous" : "named"} · ${i.assisted ? "with Echo help" : "on their own"}</div>`).join("")
+    ? mine.map((i) => `<div class="idea-row">${esc(i.text)}<div class="meta-line">${i.takenUp ? `<span class="ok">Taken up by ${esc(i.by)}</span>` : "Not taken up yet"} · ${i.anonymous ? "anonymous" : "named"} · ${i.assisted ? "with Echo help" : "on their own"}</div></div>`).join("")
     : `<p class="fine">No contributions yet.</p>`;
 }
 
@@ -500,11 +482,11 @@ function giniChart(pts) {
   const x = (i) => P + (pts.length === 1 ? (W - 2 * P) / 2 : (i * (W - 2 * P)) / (pts.length - 1));
   const y = (v) => H - P - v * (H - 2 * P);
   const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.gini)}`).join(" ");
-  const dots = pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.gini)}" r="4" fill="var(--accent)"><title>Round ${p.round}: ${p.gini}</title></circle><text x="${x(i)}" y="${H - 8}" text-anchor="middle">R${p.round}</text><text x="${x(i)}" y="${y(p.gini) - 9}" text-anchor="middle">${p.gini.toFixed(2)}</text>`).join("");
+  const dots = pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.gini)}" r="4" fill="var(--echo)"><title>Round ${p.round}: ${p.gini}</title></circle><text x="${x(i)}" y="${H - 8}" text-anchor="middle">R${p.round}</text><text x="${x(i)}" y="${y(p.gini) - 9}" text-anchor="middle">${p.gini.toFixed(2)}</text>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gini by round">
     <line x1="${P}" x2="${W - P}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/><line x1="${P}" x2="${W - P}" y1="${y(1)}" y2="${y(1)}" stroke="var(--line)" stroke-dasharray="3 4"/>
     <text x="4" y="${y(0) + 4}">0</text><text x="4" y="${y(1) + 4}">1</text>
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${dots}</svg>`;
+    <path d="${path}" fill="none" stroke="var(--echo)" stroke-width="2.5"/>${dots}</svg>`;
 }
 
 $("btn-end").addEventListener("click", finish);
@@ -519,12 +501,18 @@ async function finish() {
   log("session_end");
   show("end");
   $("e-prompt").textContent = S.topic.prompt;
-  $("e-answer").innerHTML = `<div class="loading">Drafting the group's answer…</div>`;
+  $("e-answer").innerHTML = `<div class="loading">Writing the group's answer…</div>`;
   renderEndStats();
   const r = await api("/api/summary", { prompt: S.topic.prompt, turns: S.turns.map(slim), ideas: S.ideas });
   $("e-answer").innerHTML = `<div class="answer">${esc(r.joint_answer || "")}</div>` +
-    (r.credits?.length ? `<ul class="credits">${r.credits.map((c) => `<li><b>${esc(c.name)}</b>: ${esc(c.idea)}</li>`).join("")}</ul>` : "") +
-    `<p class="fine">${r.source === "live" ? "Drafted by Echo from the transcript. The group edits and one member presents it." : "Offline draft: the student's contributions, in order. The group edits and one member presents it."}</p>`;
+    (r.credits?.length ? `<ul class="credits">${r.credits.map((c) => `<li><span><b>${esc(c.name)}</b> · ${esc(c.idea)}</span></li>`).join("")}</ul>` : "");
+}
+
+// Reflection: three 1-5 tap scales
+const RATINGS = { "q-wtc": 3, "q-anx": 3, "q-heard": 3 };
+for (const id of Object.keys(RATINGS)) {
+  $(id).innerHTML = [1, 2, 3, 4, 5].map((n) => `<button data-v="${n}"${n === 3 ? ' class="on"' : ""} aria-label="${n} of 5">${n}</button>`).join("");
+  bindSeg(id, (v) => { RATINGS[id] = +v; });
 }
 
 function renderEndStats() {
@@ -533,27 +521,26 @@ function renderEndStats() {
   const share = mine.length ? un / mine.length : null;
   S.unassistedShare = share;
   const final = S.giniByRound.at(-1).gini;
+  S.finalGini = final;
   $("e-stats").innerHTML = statTiles([
-    [S.counts[S.name], "your turns"],
-    [mine.filter((i) => i.takenUp).length, "of your ideas taken up"],
-    [final.toFixed(2), "group Gini (0 = equal)"],
+    [S.counts[S.name], "times you spoke"],
+    [mine.filter((i) => i.takenUp).length, "ideas the group used"],
     [hasEcho() ? (share == null ? "—" : `${Math.round(share * 100)}%`) : "n/a", "said on your own"],
-    [hasEcho() ? S.helpCount : "n/a", "times you used Echo"],
   ]);
   const hist = store.get("echo.sessions", []).filter((h) => h.cond === "C2" && h.unassistedShare != null);
   const series = hasEcho() && share != null ? [...hist.map((h) => h.unassistedShare), share] : hist.map((h) => h.unassistedShare);
-  if (!hasEcho()) { $("e-indep").innerHTML = `<p class="fine">Independence over sessions (RQ4) is tracked in the Echo condition only.</p>`; return; }
-  if (series.length < 2) { $("e-indep").innerHTML = `<b>Growing independence</b><p class="fine">After your next Echo session, this shows how your share of unassisted contributions changes over time. The goal is for Echo to be needed less.</p>`; return; }
+  $("e-indep").hidden = !hasEcho() || series.length < 2;
+  if ($("e-indep").hidden) return;
   const W = 500, H = 120, P = 26, bw = Math.min(46, (W - 2 * P) / series.length - 8);
   const bars = series.map((v, i) => {
     const x = P + i * ((W - 2 * P) / series.length) + 4, h = v * (H - 2 * P);
     return `<rect x="${x}" y="${H - P - h}" width="${bw}" height="${h}" rx="4" fill="var(--echo)" opacity="${i === series.length - 1 ? 1 : .55}"/><text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">S${i + 1}</text><text x="${x + bw / 2}" y="${H - P - h - 5}" text-anchor="middle">${Math.round(v * 100)}%</text>`;
   }).join("");
-  $("e-indep").innerHTML = `<b>Growing independence</b> <span class="fine">share of your contributions made without Echo's help, per session</span><svg viewBox="0 0 ${W} ${H}" width="100%">${bars}</svg>`;
+  $("e-indep").innerHTML = `<b>Needing Echo less</b><p class="fine">Share of what you said on your own, per session</p><svg viewBox="0 0 ${W} ${H}" width="100%">${bars}</svg>`;
 }
 
 $("btn-save").addEventListener("click", () => {
-  const reflection = { wtc: +$("q-wtc").value, anxiety: +$("q-anx").value, heard: +$("q-heard").value };
+  const reflection = { wtc: RATINGS["q-wtc"], anxiety: RATINGS["q-anx"], heard: RATINGS["q-heard"] };
   const hist = store.get("echo.sessions", []);
   if (!S.saved) {
     hist.push({ date: new Date().toISOString(), cond: S.cond, topic: S.topic.id, turns: S.counts[S.name], unassistedShare: S.unassistedShare, reflection });
@@ -573,9 +560,53 @@ $("btn-save").addEventListener("click", () => {
   };
   const blob = new Blob([JSON.stringify(logData, null, 2)], { type: "application/json" });
   const a = el("a"); a.href = URL.createObjectURL(blob); a.download = `echo-log-${S.cond}-${S.sessionId}.json`; a.click();
-  $("btn-save").textContent = "Saved ✓ (download again)";
+  $("btn-save").textContent = "Saved ✓";
 });
 
-$("btn-again").addEventListener("click", () => { $("btn-save").textContent = "Save reflection & download research log"; show("setup"); });
+$("btn-again").addEventListener("click", () => { $("btn-save").textContent = "Save"; show("setup"); });
 
 if (location.hash === "#selftest") import("./selftest.js").then((m) => setTimeout(m.run, 800));
+
+// ---------------------------------------------------------------- screenshot presets
+// /?shot=captions | nudge | idea | reply | cue | uptake | teacher | end
+// Optional: &lang=hi, &topic=phones, &c=C1, &theme=dark
+async function runShot(shot) {
+  const q = new URLSearchParams(location.search);
+  const pick = (seg, v) => v && $(seg).querySelector(`[data-v="${v}"]`)?.click();
+  pick("f-home", q.get("lang")); pick("f-topic", q.get("topic")); pick("f-cond", q.get("c"));
+  if (q.get("theme")) document.documentElement.dataset.theme = q.get("theme");
+  if (shot === "setup") return;
+  await statusReady;
+  $("f-voices").checked = false;
+  startSession();
+  const s = S;
+  s.start = Date.now() - 6 * 60000 - 23000; // a believable clock
+  const until = async (fn) => { while (!fn()) await sleep(100); };
+  const freeze = () => { s.paused = true; SPEED = 1; $("btn-pause").textContent = "⏸"; };
+  if (shot === "captions") { await until(() => s.turns.length >= 5); return freeze(); }
+  if (shot === "nudge") { await until(() => !$("nudge").hidden); return freeze(); }
+  await until(() => s.turns.length >= 6); freeze();
+  $("btn-idea").click();
+  $("btn-example").click();
+  if (shot === "idea") return;
+  $("check-send").click();
+  await until(() => !$("reply").hidden);
+  if (shot === "reply") return;
+  $("share-own").click();
+  if (shot === "cue") return;
+  $("say").value = $("cue-text").textContent;
+  $("composer").requestSubmit();
+  s.paused = false; SPEED = 0.05;
+  await until(() => s.turns.some((t) => t.buildsOnIdea != null) && !s.queue.length);
+  await sleep(150);
+  if (shot !== "uptake") {
+    // a second idea, said without help, and a few more rounds for the Gini chart
+    $("say").value = "Also, schools should give every student a proper career talk.";
+    $("composer").requestSubmit();
+    await until(() => s.peerTurns >= 12);
+  }
+  freeze();
+  if (shot === "teacher") { $("btn-teacher").click(); return; }
+  if (shot === "end") return finish();
+}
+if (SHOT) runShot(SHOT);
